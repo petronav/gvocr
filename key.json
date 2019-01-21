@@ -1,0 +1,12 @@
+{
+	  "type": "service_account",
+	    "project_id": "upwork-image-processing",
+	      "private_key_id": "d31ef5bec8235526c9e1b4f8689ee4131e432c7c",
+	        "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCjS8Pe67dh+tPX\nwQJSapiQE5C9jLs8UlN4K87u+bvrxP5jR8/pN+sI7YTJH8MCGhEQ2o6SBr0UJ9pb\ndLd8xBQMjpwTLq3Z8epLKEJSbFQBnD5PlMbfKShnMbR2A/8sCekwUX3rErsYX31W\nb2Ck6+xSomt4cpVdtXi51Bl5OfVcaFS+QEkOMgTQC3cPhbmiHxFpw0Z0nhM8mBN5\nu/jEi05e8aYJx4BkM7fJGckC04b53LPc/QQWya0CXi0R9aTTxm4f7ukJSUGchQ5M\nk6TlAMWxq2PaySgidj7HvQLShlJs4wbuc8B6ag19sK9wCZCw/zi3UNG0YTQ27K83\nc0Gth0OlAgMBAAECggEAFfX7yNhXEIqA4HiA1TAoReIXumI5kQ56UsRDf3CfFQFo\ne9Yd0D3YslntHHZUzczPJD7cYyecWKBWdau//HvLPXgVZeAGefPWoFZw+vA+KPxI\nBgBacYsxt5Uf8aoucFAB6CFhh5J8jnXTH6N5chyXavKUdP2l+FUOQCGV7m98v7lC\nO6d36BkwlSCK2FXEfyGD7JHPz/tTyWI57weUn21ox1cKo66fu+vZRxYANQ6Z92OA\n2BdHz//te0/yoPp/ZZgjNAN/g0U+6XMP7e2wXWBYdomM4g7zhwbeH15M1T2Lg+CG\nQIjtgm7eO5RaQqz7/TmfXDh6vP2HruLhEboviYvDgQKBgQDThZvTnFZHtEq4JbQK\nbxhTWGlqtvPu0NcTK6M/jJkww1lT0oWsjershg3teV2w0nSj8iNHxlkymuX7BaDR\ndP8LHe+h6xGCnUc6Du0D+GHSGiLBt+kqYTUiu5WObmw/t2osdvC5Xi0n9KgdYVtE\nwWb5rhtCrf82RBsdMveQYHwUgQKBgQDFoh2KYJwaGlzDvQyk+JJmJP5TJyz6MJox\nxPjkd5OJlaVZQplZ8jlHJJk4i9rXd/F/tCAJLNC4lWvs7AWUHRlB5/HbpihnnXt3\nmbMyYeSzps+wMsg+eA4uYCfxTNUpk8VXTYOXxozEWjAVmLDZDCo9uA2sUXcF7mMr\nbPW0hK3NJQKBgQChMfkG0uWNz4ABxfnm2bMYERCFGtfa75x4J5FJJMS5vKWek5j7\nX0vg5GhIyWz1C+2H40evsyDWx+Tr3+YmuZqDxlSQeKvndiSJwkYt+GPT0ccbCiTO\n/zWXOo1G9i/YftaS/DGHkpWnFXPosAD17M2lCWIM9ry/hjeDkQvJIz5sAQKBgQCG\niCibvdAFZNSo2dP1qM/fgGcvq4dOeC8+mdrjixJ/ocKA1HkXZW/gIeW7PFioPBnE\n2JTGKh+axvxEtxXFEVnUJ1PYNW9juSwG6jW1ojXQpUjTpH3zKD5fC02lUKv6NYEs\nQLPHaX0BXHNHAD3CQimvAc8s8feXrgML2IwZagf1kQKBgE2uMJklWOs+MdM3ULrs\nc+Vb/31eYiPS+CkI/gLWXuNHbG5W5b05VqUReNr+VI9JD+kGODt84n9a1RKXK+oL\nND/yXDlMOBAEP0e2WItlaEoM3gYzZ4hgE5252X+mXScm35WRYVUjS0XwyAvCeyr4\nNbXZbB4IxJSccX5y48wXZ8rF\n-----END PRIVATE KEY-----\n",
+		  "client_email": "my-vision-sa@upwork-image-processing.iam.gserviceaccount.com",
+		    "client_id": "113793870196613264193",
+		      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+		        "token_uri": "https://oauth2.googleapis.com/token",
+			  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+			    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/my-vision-sa%40upwork-image-processing.iam.gserviceaccount.com"
+}
