@@ -203,11 +203,12 @@ def ret_json(sample_line_list):
         poss_bankcode = ""
         for i in line_list:
             if "sponsor" in i.lower():
-                hsbcnda_regex = re.search(r'.*hsbc.*nd.*a.*', i, re.IGNORECASE)
+                hsbcnda_regex = re.search(r'.*\shs.*bc.*nd.*a\s.*', i, re.IGNORECASE)
                 if hsbcnda_regex:
                     poss_bankcode = "HSBC02INDIA"
         if poss_bankcode != "":
             return poss_bankcode
+
 
     def find_authbank_by_strmatch(line_list):
         logging.debug("\tfind_authbank_by_fullerton function entered.")
@@ -336,7 +337,7 @@ def ret_json(sample_line_list):
             logging.debug("\tutilitycode_regex second : {0}".format(utilitycode_regex))
         if bankcode_regex and utilitycode_regex:
             logging.debug("\tif bankcode_regex and utilitycode_regex entered.")
-            bankcode_utility_find = re.search(r'[B|G]ank.*[C|G]ode\s(.*)\sUt.*Co.*\s[NA](.*)', i, re.IGNORECASE)
+            bankcode_utility_find = re.search(r'[B|G]a.*[C|G]o[n|de]\s(.*)\sUt.*Co.*\s[NA](.*)', i, re.IGNORECASE)
             logging.debug("\tbankcode_utility_find : {0}".format(bankcode_utility_find))
             if not bankcode_utility_find:
                 bankcode_utility_find = re.search(r'[B|G]ank.*[C|G]ode\s(.*)\sU.*y\sCo.*\s[NA](.*)', i, re.IGNORECASE)
@@ -392,7 +393,11 @@ def ret_json(sample_line_list):
             logging.debug("\tauthbank_todebit_regex : {0}, type(authbank_todebit_regex) : {1}".format(authbank_todebit_regex, type(authbank_todebit_regex)))
             if (authbank_todebit_regex == None) or (not authbank_todebit_regex):
                 logging.debug("\tauthbank_todebit_regex not successful; assigning authorizebank_regex[1] = {0}".format(authorizebank_regex[1]))
-                fin_json["authorizebank"] = authorizebank_regex[1]
+                if "authorizebank" not in fin_json:
+                    fin_json["authorizebank"] = authorizebank_regex[1]
+                elif "authorizebank" in fin_json:
+                    if len(fin_json["authorizebank"]) <6:
+                        fin_json["authorizebank"] = authorizebank_regex[1]
             if authbank_todebit_regex:
                 fin_json["authorizebank"] = authbank_todebit_regex[1]
                 logging.debug("\tfin_json['authorizebank'] : {0}".format(authbank_todebit_regex[1]))
@@ -1165,6 +1170,16 @@ def ret_json(sample_line_list):
             logging.debug("\tPost_Process_41 : ifsc_insert = {0}".format(ifsc_insert))
             fin_json["ifsc"] = ifsc_insert
             logging.debug("\tPost_Process_41 : Completed.")
+
+    logging.debug("\t\nPost_Process_42 : Capitalize first characters of each word in amountinwords.")
+    if len(fin_json["amountinwords"]) >4 :
+        fin_json["amountinwords"] = " ".join([k.capitalize() if k.lower() != 'and' else k for k in fin_json["amountinwords"].split()])
+
+
+    logging.debug("\t\nPost_Process_43 : Check if utilitycode is 18 charcaters length, if not add extra zeroes.")
+    if fin_json["utilitycode"] != "":
+        if len(fin_json["utilitycode"]) != 18:
+            fin_json["utilitycode"] = fin_json["utilitycode"][:4] + "0" * (18 - len(fin_json["utilitycode"])) + fin_json["utilitycode"][4:]
 
     logging.debug("\t\nPreparaing a new json for maintaining the correct order of keys.")
     new_js = {}
