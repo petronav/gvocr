@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+__author__ = "Sayan Chaudhuri aka Michael Petronav"
+__credits__ = ["Sayan Chaudhuri aka Michael Petronav", "Gopi Agarwal (Advisor of Requirements)", "Sankar Chaudhuri (Tester)"]
+__version__ = "02.13.00"
+__email__ = ["sayan.bwn50@gmail.com", "petronav73939133@gmail.com" , "metronetizen@hotmail.com"]
+__copyright__ = "Copyright 2019, Silfra GNSA OCR Project"
+__status__ = "Production"
 from google.cloud import vision
 from google.protobuf import json_format
 from flask import jsonify
@@ -12,11 +19,17 @@ from tess_ang_check import run_tesseract, parse_hocr, rotate_image
 from t2n2t import num2word, word2num
 from difflib import SequenceMatcher
 
+# =====================================================
+# IMAGE LOADING    |    LOG FILE DECLARATION
+# =====================================================
 file_name = sys.argv[1]
 unique_log_file = os.path.splitext(file_name)[0].split("/")[-1] + ".log"
 #log_file_name = "test.log"
 logging.basicConfig(filename = unique_log_file, level=logging.DEBUG, format="%(asctime)s:%(levelname)s:%(message)s")
 
+# =====================================================
+# ROTATED IMAGE NAME + HOCR FILE NAME DECLARATION
+# =====================================================
 output_img_filename = ".".join(file_name.split(".")[:-1]) + ".rot." + file_name.split(".")[-1]
 print(output_img_filename)
 logging.debug("\toutput_img_filename : {0}".format(output_img_filename))
@@ -25,29 +38,52 @@ output_hocr_filename = ".".join(file_name.split(".")[:-1])
 print(output_hocr_filename)
 logging.debug("\toutput_hocr_filename : {0}".format(output_hocr_filename))
 
+# =====================================================
+# RUN TESSERACT    |    CHECK ANGLE
+# =====================================================
 run_tesseract(file_name, output_hocr_filename, "eng")
 print("tesseract done.")
 logging.debug("\trunning tesseract is done.")
 check_rot = rotate_image(cv_image = file_name, angle = parse_hocr(hocr_file = output_hocr_filename  + ".hocr"), file_name_rot = output_img_filename)
 
+# =====================================================
+# GOOGLE VISION CREDENTIALS DECLARATION
+# =====================================================
 credentials = service_account.Credentials.from_service_account_file('key.json')
-
 client = vision.ImageAnnotatorClient(credentials=credentials)
 # How many pages should be grouped into each json output file.
 batch_size = 2
+
+# =====================================================
+# ESSENTIAL CHARACTER ALTERING FUNCTIONS DEFINITIONS
+# =====================================================
 def removespecialcharacter(string1):
+    """Return the string without any special characters"""
     string2=re.sub('[^A-Za-z0-9\.\,\s]+', '', string1)
     return string2
 def onlyalphanumeric(string1):
+    """Return the string with only alphabetic and numeric type of charcaters."""
     string2 = re.sub('[^A-Za-z0-9]+', '', string1)
     return string2
 def removespace(string1):
+    """Return the string without any space."""
     string2=re.sub('\s+', '', string1)
     return string2
 def onlyalphabetic(string1):
+    """Return the string with only alphabetic characters."""
     string2 = re.sub('[^A-Za-z\s]+', '', string1)
     return string2
+
+# =====================================================
+# STRING SIMILARITY CHECK FUNCTION DEFINITIONS
+# =====================================================
 def check_string_similarity_list(str1, list1):
+    """
+    Return the string most similar with the input string from the input list of strings.
+    sample parameters : str1 = 'hdfc', list1 = ['hdec', 'citi', 'ciub']
+    output-type :   Tuple with first item as dictionary, second item as the most similar inside the list.
+                    The dictionary contains the items of the list as keys and similarity tolerance as values.
+    """
     logging.debug("\tchecking similar string : {0}, inside a list : {1}".format(str1, list1))
     if list1:
         similarity_dict = {}
@@ -60,7 +96,15 @@ def check_string_similarity_list(str1, list1):
         logging.debug("\tsorted_similarity_dict : {0}".format(sorted_similarity_dict))
         return (sorted_similarity_dict ,  highly_similar_key)
 
+# =========================================================================
+# FUNCTION RETURNING LIST OF LINES READ BY GOOGLE VISION INITIALIZED 
+# =========================================================================
 def get_line_lists(file_path):
+    """
+    Return the list of lines read by Google vision API.
+    parameter : file_path - The path of the input image to be read by Google Vision API. 
+    output-type : list of strings.
+    """
     feature = vision.types.Feature(type = vision.enums.Feature.Type.DOCUMENT_TEXT_DETECTION)
     with open(file_path, 'rb') as image_file :
         content = image_file.read()
@@ -72,31 +116,66 @@ def get_line_lists(file_path):
         logging.debug("\ti.description : {0}".format(i.description))
     logging.debug("\tresponse.text_annotations[0].description : {0}".format(response.text_annotations[0].description))
     line_list = str(response.text_annotations[0].description).split("\n")
-    #print("line list : {0}".format(line_list))
     line_list = [i for i in line_list if len(i) > 1]
     #logging.debug("\tline_list : {0}".format(line_list))
     return line_list
 
+# =====================================================
+# DICTIONARIES FOR POST-PROCESSING DECLARATION
+# =====================================================
 keywords_field_name = ["status", "umrn", "date", "nachtype", "bankcode", "utilitycode", "authorizebank", "debitaccounttype", "acnumber", "withbank", "ifsc", "micr", "amount" , \
 "amountinwords", "frequency", "debittype", "reference1", "reference2", "mobile", "email", "fromdate", "todate", "untilcancelled", "issigned1", "issigned2", "issigned3"]
 
 ifsc_withbank_dict = {"ICIC" : "ICICI Bank", "SBIN" : "State Bank of India" , "HDFC" : "HDFC Bank", "CITI" : "CITI Bank", "HSBC" : "HSBC Bank", "IBKL" : "IDBI Bank", "IOBA" : "Indian Overseas Bank",\
 "BKID" : "Bank of India", "KVBL" : "Karur Vysya Bank", "RBIS" : "Reserve Bank of India", "SYNB" : "Syndicate Bank", "UCBA" : "UCO Bank" , "UBIN" : "Union Bank of India", "UTBI" : "United Bank of India",\
-"YESB" : "YES Bank"}
+"YESB" : "YES Bank", "CIUB" : "City Union Bank"}
 
 withbank_ifsc_dict = {"icici bank" : "ICIC", "state bank of india": "SBIN", "hdfc bank" : "HDFC", "citi bank" : "CITI", "hsbc bank" : "HSBC", "idbi bank" : "IBKL", "indian overseas bank" : "IOBA",\
 "bank of india" : "BKID", "karur vysya bank" : "KVBL", "reserve bank of india" : "RBIS", "syndicate bank" : "SYNB", "uco bank" : "UCBA", "union bank of india" : "UBIN", " united bank of india" : "UTBI",\
-"yes bank" : "YESB"}
+"yes bank" : "YESB", "city union bank" : "CIUB"}
 
 ifsc_mod_dict = {"ICIC" : ["IC1C" , "1CIC" , "1C1C"] , "HDFC" : ["MDFC", "HOFC", "HDEC", "HDFG"], "CITI" : ["CIT1", "C1TI", "C1T1"], "IOBA" : ["TOBA", "IQBA", "IOPA"], "KVBL" :["KVEL", "KUBL"]}
 
+# ======================================
+# MAIN JSON RETURNING FUNCTION 
+# ======================================
 def ret_json(sample_line_list):
+    """
+    Return the json with desired key-value pairs.
+    All possible keys of the returned json are in the pre-declared list `keywords_field_name`.
+    """
     fin_json = {}
     logging.debug("\tret_json function entered.")
     encoded_line_list = [i.encode("utf-8") for i in sample_line_list]
     pprint(encoded_line_list)
     #logging.debug("\tinput sample_line_list : {0}".format(sample_line_list))
+
+    # ======================================
+    # FUNCTION FOR REFORMATTING DATES 
+    # ======================================
+    def reformat_dates(date_string):
+        """
+        Function returns the input date string in dd-mm-yyyy format.
+        Called in post-precesing part to reformat the date, fromdate and todate in the json.
+        """
+        logging.debug("\treformat_dates function entered.")
+        date_reformatted = ""
+        if date_string != "":
+            if len(date_string) == 8:
+                date_reformatted = date_string[:2] + "-" + date_string[2:4] + "-" + date_string[4:]
+            else:
+                yyyy = date_string[-4:]
+                mm = date_string[-6:-4]
+                dd = date_string[:-6]
+                date_reformatted = dd + "-" + mm + "-" + yyyy
+        if date_reformatted != "":
+            return date_reformatted
+
+    # =================================================
+    # FUNCTION FOR FINDING AMOUNT and AMOUNTINWORDS 
+    # =================================================
     def find_amount(line_list):
+        """Return the amount and amountinwords from the line_list if the line contains multiple amount keywords."""
         logging.debug("\tfind_amount function entered with line_list : {0} ".format(line_list))
         amount_keywords = ["one", "two","three", "four", "five", "six", "seven", "eight", "nine", "hundred", "thousand"]
         poss_amountinwords = ""
@@ -139,6 +218,9 @@ def ret_json(sample_line_list):
         if poss_amount_fin != "" or poss_amountinwords != "":
             return poss_amount_fin, poss_amountinwords
 
+    # =================================================
+    # FUNCTION FOR FINDING AMOUNT WITH CERTAIN FORMAT 
+    # =================================================
     def find_amount_with_format(line_list):
         logging.debug("\tfind_amount_with_format function entered.")
         poss_amount_only = ""
@@ -151,6 +233,9 @@ def ret_json(sample_line_list):
         if poss_amount_only != "":
             return poss_amount_only
 
+    # ======================================
+    # FUNCTION FOR FINDING DEBITACCOUNTTYPE 
+    # ======================================
     def find_todebit_line_only(line_list):
         logging.debug("\ttodebit_line_only function entered !")
         poss_todebit = ""
@@ -166,6 +251,9 @@ def ret_json(sample_line_list):
         if poss_todebit != "":
             return poss_todebit
 
+    # =========================================================================
+    # FUNCTION FOR FINDING REFERENCE 1 FROMT HE NEXT LINE OF MAXIMUM AMOUNT 
+    # =========================================================================
     def find_reference1_by_maxamount(line_list):
         logging.debug("\tfind_reference1_by_maxamount function entered.")
         poss_ref1 = ""
@@ -183,6 +271,9 @@ def ret_json(sample_line_list):
                             poss_ref1 = "".join(reference1_digits)
         return poss_ref1
 
+    # ==========================================
+    # FUNCTION FOR FINDING SPECIFIC BANKCODE 
+    # ==========================================
     def find_bankcode_from_nextline(line_list):
         logging.debug("\tfind_bankcode_from_nextline function entered.")
         poss_bankcode = ""
@@ -198,6 +289,9 @@ def ret_json(sample_line_list):
         if poss_bankcode != "":
             return poss_bankcode
     
+    # =================================================
+    # FUNCTION FOR FINDING BANKCODE FROM SPONSOR LINE 
+    # =================================================
     def find_bankcode_from_sponsorline(line_list):
         logging.debug("\tfind_bankcode_from_sponsorline function entered.")
         poss_bankcode = ""
@@ -209,7 +303,26 @@ def ret_json(sample_line_list):
         if poss_bankcode != "":
             return poss_bankcode
 
+    # ==================================================================
+    # FUNCTION FOR FINDING AUTHORIZEBANK WITH MULTIPLE REGEX SEARCHES 
+    # ==================================================================
+    def find_authbank_extreme_regex(line_list):
+        logging.debug("\tfind_authbank_extreme_regex function entered.")
+        poss_authbank = ""
+        for i in line_list:
+            authbank_ext_regex = re.search(r'[W|IM|N|M]e\shereby\sa.*ise(.*)', i, re.IGNORECASE)
+            if not authbank_ext_regex:
+                authbank_ext_regex = re.search(r'.*ere.*y\sa.*ise(.*)', i, re.IGNORECASE)
+            if not authbank_ext_regex:
+                authbank_ext_regex = re.search(r'.*ere.*y\sa.*ize(.*)', i, re.IGNORECASE)
+            if authbank_ext_regex:
+                poss_authbank = authbank_ext_regex[1]
+        if poss_authbank != "":
+            return poss_authbank
 
+    # ========================================================================================
+    # FUNCTION FOR FINDING AUTHORIZEBANK IF 'authorise' or 'authorize' KEYWORDS ARE PRESENT 
+    # ========================================================================================
     def find_authbank_by_strmatch(line_list):
         logging.debug("\tfind_authbank_by_fullerton function entered.")
         poss_authbank = ""
@@ -217,10 +330,15 @@ def ret_json(sample_line_list):
             if "authorise" in i.lower():
                 if poss_authbank != "":
                     poss_authbank = i[i.lower().find("authorise")+9:]
-                    print(poss_authbank)
+            elif "authoriZe" in i.lower():
+                if poss_authbank != "":
+                    poss_authbank = i[i.lower().find("authoriZe")+9:]
         if poss_authbank != "":
             return poss_authbank
 
+    # ========================================================================================
+    # FUNCTION II FOR FINDING AUTHORIZEBANK IF 'authorise' or 'authorize' KEYWORDS ARE PRESENT 
+    # ========================================================================================
     def find_authorizebank_from_authoriseline(line_list):
         logging.debug("\tfind_authorizebank_not_from_authorizeline function entered.")
         poss_authbank = ""
@@ -231,20 +349,31 @@ def ret_json(sample_line_list):
                     poss_authbank = auth_previous_line[auth_previous_line.upper().find("FULL") : auth_previous_line.upper().find("LIMITED")+7]
                 elif "FULL" in auth_previous_line.upper() and  "ltd" in auth_previous_line.lower():
                     poss_authbank = auth_previous_line[auth_previous_line.upper().find("FULL") : auth_previous_line.lower().find("ltd") + 3]
-
+            elif "authoriZe" in i.lower():
+                auth_previous_line = line_list[line_list.index(i) -1]
+                if "FULL" in auth_previous_line.upper() and "LIMITED" in auth_previous_line.upper():
+                    poss_authbank = auth_previous_line[auth_previous_line.upper().find("FULL") : auth_previous_line.upper().find("LIMITED")+7]
+                elif "FULL" in auth_previous_line.upper() and  "ltd" in auth_previous_line.lower():
+                    poss_authbank = auth_previous_line[auth_previous_line.upper().find("FULL") : auth_previous_line.lower().find("ltd") + 3]
         if poss_authbank != "":
             return poss_authbank
 
+    # ============================================
+    # FUNCTION FOR FINDING WITHBANK 
+    # ============================================
     def find_withbank(line_list):
         logging.debug("\tfind_withbank function entered.")
         poss_withbank = ""
         for i in line_list:
-            withbank_regex_2 = re.search(r'with\sb[a|e|o|c]n[k|f|t|l|h](.*)', i, re.IGNORECASE)
+            withbank_regex_2 = re.search(r'with\sb[a|e|o|c]n[k|f|t|l|h|i](.*)', i, re.IGNORECASE)
             if withbank_regex_2:
                 poss_withbank = withbank_regex_2[1]
         if poss_withbank != "":
             return poss_withbank
 
+    # ============================================
+    # FUNCTION FOR FINDING BANK ACCOUNT NUMBER 
+    # ============================================
     def find_bank_acnumber(line_list):
         logging.debug("\tfind_bank_acnumber function entered.")
         poss_bankacnum = ""
@@ -254,6 +383,8 @@ def ret_json(sample_line_list):
                 banknumber_regex = re.search(r'[b|g]ank.*numb(.*)', i, re.IGNORECASE)
             if not banknumber_regex:
                 banknumber_regex = re.search(r'[b|g]ank.*num(.*)', i, re.IGNORECASE)
+            if not banknumber_regex:
+                banknumber_regex = re.search(r'[b|g]ank.*n.*ber(.*)', i, re.IGNORECASE)
             if banknumber_regex:
                 if banknumber_regex[1] != None:
                     banknum_text = banknumber_regex[1]
@@ -262,6 +393,9 @@ def ret_json(sample_line_list):
         if poss_bankacnum != "":
             return poss_bankacnum
 
+    # ============================================
+    # FUNCTION FOR FINDING MICR 
+    # ============================================
     def find_micr_keyword(line_list):
         logging.debug("find_micr_keyword function entered.")
         poss_micr = ""
@@ -274,6 +408,9 @@ def ret_json(sample_line_list):
         if poss_micr != "":
             return poss_micr
 
+    # =====================================================
+    # FUNCTION FOR FINDING IFSC IF WITHBANK IS FOUND 
+    # =====================================================
     def find_ifsc_if_withbank_found(line_list, ifsc_key_param) :
         logging.debug('\tfind_ifsc_if_withbank_found function entered.')
         poss_ifsc = ""
@@ -294,10 +431,32 @@ def ret_json(sample_line_list):
         if poss_ifsc != "":
             return poss_ifsc
 
+    # ======================================================================
+    # FUNCTION FOR FINDING FROMDATE IN BETWEEN PERIOD LINE AND FROM LINE 
+    # ======================================================================
+    def find_fromdate_inbtwn_periodfrom(line_list):
+        logging.debug("\tfind_fromdate_inbtwn_periodfrom function entered.")
+        poss_fromdate2 = ""
+        for i in line_list:
+            if "period" in i.lower():
+                periodline_no = sample_line_list.index(i)
+                poss_fromline_no = periodline_no + 2
+                if poss_fromline_no < len(sample_line_list):
+                    if "fro" in sample_line_list[poss_fromline_no].lower() or "from" in sample_line_list[poss_fromline_no].lower():
+                        poss_fromdate_line = sample_line_list[periodline_no + 1]
+                        poss_fromdate_digits = [k for k in poss_fromdate_line if k.isnumeric()]
+                        poss_fromdate2 = "".join(poss_fromdate_digits)
+        if poss_fromdate2 != "":
+            return poss_fromdate2
 
+
+    # ========================================================
+    # LOOP THROUGH THE WHOLE LINE LIST TO GET JSON 
+    # ========================================================
     for i in sample_line_list:
         #logging.debug("\t\n\ni in sample_line_list : {0}".format(i))
         logging.debug("\n\n")
+
         umrn_regex = re.search(r'um.*n.*', i, re.IGNORECASE)
         if "umrn" in i.lower() or umrn_regex:
             logging.debug("\tumrn in i.lower()")
@@ -328,13 +487,30 @@ def ret_json(sample_line_list):
                         fin_json["date"] = "".join(date_regex)
                         logging.debug("\tdate is in fin_json with length < 3.")
 
-        bankcode_regex = re.search(r'[B|G][ANK](.*)[C|G][ode]', i, re.IGNORECASE)
+
+        bankcode_regex = re.search(r'[B|G]ank.*[C|G]ode(.*)', i, re.IGNORECASE)
         logging.debug("\tbankcode_regex : {0}".format(bankcode_regex))
-        utilitycode_regex = re.search(r'[U][t](.*)[C][o](.*)[N][A](.*)', i , re.IGNORECASE)
+        if not bankcode_regex:
+            bankcode_regex = re.search(r'[B|G]ank\s[C|G]od[e|c|o](.*)', i, re.IGNORECASE)
+            logging.debug("\tbankcode_regex third : {0}".format(bankcode_regex))
+        if not bankcode_regex:
+            bankcode_regex = re.search(r'[B|G][ank].*[C|G]ode(.*)', i, re.IGNORECASE)
+            logging.debug("\tbankcode_regex fourth : {0}".format(bankcode_regex))
+        if not bankcode_regex:
+            bankcode_regex = re.search(r'Ba.*Code(.*)', i, re.IGNORECASE)
+            logging.debug("\tbankcode_regex fourth : {0}".format(bankcode_regex))
+        sponsor_regex = re.search(r'spons[o|e|c]r\s(.*)', i, re.IGNORECASE)
+        logging.debug("\tsponsor_regex : {0}".format(sponsor_regex))
+        sponsor_only_regex = re.search(r'spons[o|e|c]r(.*)', i, re.IGNORECASE)
+        logging.debug("\tsponsor_only_regex : {0}".format(sponsor_only_regex))
+        utilitycode_regex = re.search(r'[U][t](.*)[C][o](.*)[N][A](.*)', i , re.IGNORECASE)        
         logging.debug("\tutilitycode_regex : {0}".format(utilitycode_regex))
         if not utilitycode_regex:
-            utilitycode_regex = re.search(r'[itil](.*)[C]od(.*)', i, re.IGNORECASE)
+            utilitycode_regex = re.search(r'Ut.*Code(.*)', i, re.IGNORECASE)
             logging.debug("\tutilitycode_regex second : {0}".format(utilitycode_regex))
+        if not utilitycode_regex:
+            utilitycode_regex = re.search(r'[itil](.*)[C]od(.*)', i, re.IGNORECASE)
+            logging.debug("\tutilitycode_regex third : {0}".format(utilitycode_regex))
         if bankcode_regex and utilitycode_regex:
             logging.debug("\tif bankcode_regex and utilitycode_regex entered.")
             bankcode_utility_find = re.search(r'[B|G]a.*[C|G]o[n|de]\s(.*)\sUt.*Co.*\s[NA](.*)', i, re.IGNORECASE)
@@ -371,15 +547,47 @@ def ret_json(sample_line_list):
                 fin_json["utilitycode"] = removespace(utilitycode_find[1])
                 logging.debug("\tfin_json['utilitycode'] = {0}".format(utilitycode_find[1]))
         if bankcode_regex and "bankcode" not in fin_json:
-            pass
+            fin_json["bankcode"] = removespace(bankcode_regex[1])
+        if (not bankcode_regex) and sponsor_regex:
+            logging.debug("\tbankcode_regex failed but sponsor_regex is successful.")
+            sponsor_utility_regex = re.search(r'spons[o|e|c]r\s(.*)Ut.*ode.*', i, re.IGNORECASE)
+            logging.debug("\tsponsor_utility_regex : {0}".format(sponsor_utility_regex))
+            if not sponsor_utility_regex:
+                sponsor_utility_regex = re.search(r'spons[o|e|c]r\s(.*)Ut.*co.*', i, re.IGNORECASE)
+                logging.debug("\tsponsor_utility_regex second : {0}".format(sponsor_utility_regex))
+            if sponsor_utility_regex:
+                logging.debug("\tsponsor_utility_regex is successful")
+                if "bankcode" not in fin_json:
+                    fin_json["bankcode"] = sponsor_utility_regex[1]
+            if not sponsor_utility_regex:
+                if "bankcode" not in fin_json:
+                    fin_json["bankcode"] = sponsor_regex[1]
+        if sponsor_only_regex and "bankcode" not in fin_json:
+            logging.debug("\tsponsor_only_regex is successful and bankcode is not in fin_json.")
+            sponsor_next_line = sample_line_list[sample_line_list.index(i)+1]
+            logging.debug("\tsponsor_next_line : {0}".format(sponsor_next_line))
+            sponsor_next_line_utility_regex = re.search(r'(.*)Ut.*Code.*', sponsor_next_line, re.IGNORECASE)
+            logging.debug("\tsponsor_next_line_utility_regex : {0}".format(sponsor_next_line_utility_regex))
+            if not sponsor_next_line_utility_regex:
+                sponsor_next_line_utility_regex = re.search(r'(.*)Ut.*Co.*', sponsor_next_line, re.IGNORECASE)
+                logging.debug("\tsponsor_next_line_utility_regex second : {0}".format(sponsor_next_line_utility_regex))
+            if not sponsor_next_line_utility_regex:
+                sponsor_next_line_utility_regex = re.search(r'(.*)Ut.*C.*[c|o|e]', sponsor_next_line, re.IGNORECASE)
+                logging.debug("\tsponsor_next_line_utility_regex third : {0}".format(sponsor_next_line_utility_regex))
+            if sponsor_next_line_utility_regex:
+                logging.debug("\tsponsor_next_line_utility_regex successful.")
+                fin_json["bankcode"] = removespace(sponsor_next_line_utility_regex[1])
 
-        authorizebank_regex = re.search(r'[W].*\s[h|n|r][e|o|c].*\s[Au].*[se|ze]\s(.*)', i, re.IGNORECASE)
+        authorizebank_regex = re.search(r'[W].*\s[h|n|r][e|o|c].*\s[Au].*[s|z]e\s(.*)', i, re.IGNORECASE)
         logging.debug("\tauthorizebank_regex : {0}".format(authorizebank_regex))
         if not authorizebank_regex:
-            authorizebank_regex = re.search(r'[w|vv].*\s[h|n].*\s[auth|aut].*e\s(.*)', i, re.IGNORECASE)
+            authorizebank_regex = re.search(r'[w|vv].*\s[h|n].*\sau[th|t].*e\s(.*)', i, re.IGNORECASE)
             logging.debug("\tauthorizebank_regex second : {0}".format(authorizebank_regex))
         if not authorizebank_regex:
             authorizebank_regex = re.search(r'[w|vv].*\she.*\saut{,5}(.*)', i, re.IGNORECASE)
+            logging.debug("\tauthorizebank_regex third : {0}".format(authorizebank_regex))
+        if not authorizebank_regex:
+            authorizebank_regex = re.search(r'.*he.*y\sau.*i[s|z]e(.*)', i, re.IGNORECASE)
             logging.debug("\tauthorizebank_regex third : {0}".format(authorizebank_regex))
         if authorizebank_regex and "deb" not in i.lower():
             logging.debug("\tauthorizebank_regex successful and 'deb' is not in i.lower().")
@@ -412,6 +620,8 @@ def ret_json(sample_line_list):
                 if "CA" in todebit_phrase:
                     fin_json["debitaccounttype"] = "CA"
                     logging.debug("\t'CA' in todebit_phrase.")
+        if authorizebank_regex and "authorizebank" not in fin_json:
+            fin_json["authorizebank"] = authorizebank_regex[1]
 
 
         if "CREATE" in i.upper():
@@ -464,6 +674,12 @@ def ret_json(sample_line_list):
 
         acnumber_regex = re.search(r'[B|G][ank].*a.*c.*umbe(.*)', i, re.IGNORECASE)
         logging.debug("\tacnumber_regex : {0}".format(acnumber_regex))
+        if not acnumber_regex:
+            acnumber_regex = re.search(r'[B|G][ank].*a.*c.*mber(.*)', i, re.IGNORECASE)
+            logging.debug("\tacnumber_regex second : {0}".format(acnumber_regex))
+        if not acnumber_regex:
+            acnumber_regex = re.search(r'[B|G]ank.*a.*[c|e|o].*mber(.*)', i, re.IGNORECASE)
+            logging.debug("\tacnumber_regex third : {0}".format(acnumber_regex))
         if acnumber_regex:
             logging.debug("\tacnumber_regex is successful.")
             acnum_text = acnumber_regex[1]
@@ -483,6 +699,9 @@ def ret_json(sample_line_list):
 
         withbank_regex = re.search(r'[wi]th|n\s[B|G]ank(.*)', i, re.IGNORECASE)
         logging.debug("\twithbank_regex : {0}".format(withbank_regex))
+        if not withbank_regex:
+            withbank_regex = re.search(r'w[ith|in|a]\sB[a|e|c|o]nk(.*)', i, re.IGNORECASE)
+            logging.debug("\twithbank_regex second : {0}".format(withbank_regex))
         if withbank_regex:
             logging.debug("\twithbank_regex is successful, but it may contain ifsc also.")
         withbank_regex_alt = re.search(r'w.*[th|n]\s[B|G]ank\s(.*)', i, re.IGNORECASE)
@@ -648,6 +867,9 @@ def ret_json(sample_line_list):
 
         mobile_regex = re.search(r'.*mob.*\sn(.*)\d{,11}' , i, re.IGNORECASE)
         logging.debug("\tmobile_regex : {0}".format(mobile_regex))
+        if not mobile_regex:
+            mobile_regex = re.search(r'.*obile\sn(.*)\d{,11}' , i, re.IGNORECASE)
+            logging.debug("\tmobile_regex seocnd : {0}".format(mobile_regex))
         if mobile_regex:
             mobile_text = mobile_regex[1]
             logging.debug("\tmobile_text : {0}".format(mobile_text))
@@ -715,7 +937,7 @@ def ret_json(sample_line_list):
                         fin_json["fromdate"] = poss_frodate
 
 
-        if "to" in i.lower() and sample_line_list.index(i) > 6:
+        if "to" in i.lower() and sample_line_list.index(i) > 10:
             except_to_text = i[i.lower().find("to") + 2:]
             logging.debug("\texcept_to_text : {0}".format(except_to_text))
             check_alpha_char_in_todate = re.findall('[a-zA-Z]' , except_to_text)
@@ -731,8 +953,8 @@ def ret_json(sample_line_list):
                         fin_json["todate"] = poss_todate
 
 
-        if "from" in i.lower() or "fron" in i.lower():
-            logging.debug("\tfrom is in i.lower().")
+        if "from" in i.lower() or "fron" in i.lower() or "fro" in i.lower():
+            logging.debug("\tfrom or fron or fro is in i.lower().")
             from_lineno = sample_line_list.index(i)
             logging.debug("\tfrom_lineno : {0}".format(from_lineno))
         until_cancel_regex_init = re.search(r'.*un.*can.*', i, re.IGNORECASE)
@@ -749,13 +971,21 @@ def ret_json(sample_line_list):
                     logging.debug("\tthe anyline is all uppercase : {0}".format(anyline))
                     all_upper_lines.append(anyline)
             if len(all_upper_lines) != 0:
+                for any_upper_line in all_upper_lines:
+                    if 'TO' in any_upper_line:
+                        all_upper_lines.remove(any_upper_line)
+                    if "TITI" in any_upper_line:
+                        all_upper_lines.remove(any_upper_line)
+                all_upper_lines_combined = " ".join(all_upper_lines)
                 if "issigned1" not in fin_json:
-                    fin_json["issigned1"] = all_upper_lines[-1]
+                    #fin_json["issigned1"] = all_upper_lines[-1]
+                    fin_json["issigned1"] = all_upper_lines_combined
                     logging.debug("\tas issigned1 is not in fin_json, anyline is getting appended into fin_json.")
                 elif "issigned1" in fin_json:
                     if len(fin_json["issigned1"]) < 3:
                         logging.debug("\tissigned1 is is fin_json but the length of it is <3.")
-                        fin_json["issigned1"] = all_upper_lines[-1]
+                        #fin_json["issigned1"] = all_upper_lines[-1]
+                        fin_json["issigned1"] = all_upper_lines_combined
 
 
         until_cancel_regex = re.search(r'.*unt.*ca.*', i, re.IGNORECASE)
@@ -763,6 +993,9 @@ def ret_json(sample_line_list):
         if not until_cancel_regex:
             until_cancel_regex = re.search(r'.*nti.*anc.*', i, re.IGNORECASE)
             logging.debug("\tuntil_cancel_regex second : {0}".format(until_cancel_regex))
+        if not until_cancel_regex:
+            until_cancel_regex = re.search(r'.*un.*ca.*', i, re.IGNORECASE)
+            logging.debug("\tuntil_cancel_regex third : {0}".format(until_cancel_regex))            
         if until_cancel_regex:
             logging.debug("\tuntil_cancel_regex is successful.")
             until_cancel_line_no = sample_line_list.index(i)
@@ -770,6 +1003,8 @@ def ret_json(sample_line_list):
             logging.debug("\tlen(sample_line_list) : {0}".format(len(sample_line_list)))
             until_cancel_next_line_no = until_cancel_line_no +1
             logging.debug("\tuntil_cancel_next_line_no : {0}".format(until_cancel_next_line_no))
+            until_cancel_onedrop_line_no = until_cancel_line_no + 2
+            logging.debug("\tuntil_cancel_onedrop_line_no : {0}".format(until_cancel_onedrop_line_no))
             if until_cancel_next_line_no < len(sample_line_list):
                 until_cancel_next_line = sample_line_list[until_cancel_next_line_no]
                 logging.debug("\tuntil_cancel_next_line : {0}".format(until_cancel_next_line))
@@ -781,16 +1016,21 @@ def ret_json(sample_line_list):
                         if len(fin_json["issigned1"]) < 3:
                             logging.debug("\tissigned1 is in fin_json but mostly vacant.")
                             fin_json["issigned1"] = until_cancel_next_line
+            if until_cancel_onedrop_line_no < len(sample_line_list):
+                until_cancel_onedrop_line = sample_line_list[until_cancel_onedrop_line_no]
+                logging.debug("\tuntil_cancel_onedrop_line : {0}".format(until_cancel_onedrop_line))
+                if until_cancel_onedrop_line.isupper():
+                    if "issigned1" not in fin_json:
+                        logging.debug("\tissigned1 not in fin_json.")
+                        fin_json["issigned1"] = until_cancel_onedrop_line
+                    elif "issigned1" in fin_json:
+                        if len(fin_json["issigned1"]) < 3:
+                            logging.debug("\tissigned1 is in fin_json but mostly vacant.")
+                            fin_json["issigned1"] = until_cancel_onedrop_line
+                        else:
+                            logging.debug("\tissigned1 is in fin_json but possibly contain first part of name.")
+                            fin_json["issigned1"] += " " + until_cancel_onedrop_line
 
-
-        """
-        if "FREQ" in i.upper() or "frequency" in i.lower():
-            keywords_pos["frequency"] = sample_line_list.index(i)
-        reference2_regex = re.search(r'(.*)[ref](.*)[2](.*)', i, re.IGNORECASE)
-        if reference2_regex:
-            keywords_pos["reference2"] = sample_line_list.index(i)
-    keywords_pos = sorted(keywords_pos.items(), key=lambda kv: kv[1])
-    """
     logging.debug("\tBefore post-processing, fin_json : {0}".format(fin_json))
     logging.debug("\t\n\nNow post-processing on the fin_json starts.")
 
@@ -848,6 +1088,18 @@ def ret_json(sample_line_list):
                 fin_json["authorizebank"] = authbank_insert2
                 logging.debug("\tPost_Process_1.5 : Completed.")
 
+    logging.debug("\t\nPost_Process_1.6 : If authorizebank is still not found in fin_json, we call our extreme function and assign if found.")
+    if "authorizebank" not in fin_json:
+        if find_authbank_extreme_regex(sample_line_list):
+            authbank_insert3 = find_authbank_extreme_regex(sample_line_list)
+            fin_json["authorizebank"] = authbank_insert3
+            logging.debug("\tPost_Process_1.6 : Completed.")
+    elif "authorizebank" in fin_json:
+        if len(fin_json["authorizebank"]) < 6:
+            if find_authbank_extreme_regex(sample_line_list):
+                authbank_insert3 = find_authbank_extreme_regex(sample_line_list)
+                fin_json["authorizebank"] = authbank_insert3
+                logging.debug("\tPost_Process_1.6 : Completed.")
 
     logging.debug("\t\nPost_Process_1.6 : If bankaccountnumber is not found in fin_json, we call our special function and assign if found.")
     if "bankaccountnumber" not in fin_json:
@@ -863,6 +1115,11 @@ def ret_json(sample_line_list):
             micr_insert = find_micr_keyword(sample_line_list)
             fin_json["micr"] = micr_insert
 
+    logging.debug("\t\nPost_Process_1.8 : If fromdate is not in fin_json, we call our special function and assign if found.")
+    if "fromdate" not in fin_json:
+        if find_fromdate_inbtwn_periodfrom(sample_line_list):
+            fromdate_insert = find_fromdate_inbtwn_periodfrom(sample_line_list)
+            fin_json["fromdate"] = fromdate_insert
 
     logging.debug("\t\nPost_Process_2 : If amount or amountinwords are not in fin_json, we call our special function and assign if found.")
     if "amount" not in fin_json and "amountinwords" not in fin_json:
@@ -927,6 +1184,8 @@ def ret_json(sample_line_list):
     fin_json["ifsc"] = onlyalphanumeric(fin_json["ifsc"])
     fin_json["micr"] = onlyalphanumeric(fin_json["micr"])
     fin_json["amount"] = removespace(fin_json["amount"])
+    fin_json["debitaccounttype"] = removespecialcharacter(fin_json["debitaccounttype"])
+    fin_json["debitaccounttype"] = onlyalphanumeric(fin_json["debitaccounttype"])
 
     logging.debug("\t\nPost_Process_10 : If ifsc length exceeds 11, take last four charcaters and check if any alphabetic charcaters are attached.")
     if len(fin_json["ifsc"]) > 11:
@@ -935,13 +1194,14 @@ def ret_json(sample_line_list):
 
     logging.debug("\t\nPost_Process_11 : If bankcode contains 'HSBC', check the immediate next charcater for 'O' and if present replace with '0'.")
     if "HSBC" in fin_json["bankcode"]:
-        if fin_json["bankcode"][fin_json["bankcode"].find("HSBC") + 4] == "O":
+        bankcode_char_afterhsbc = fin_json["bankcode"][fin_json["bankcode"].find("HSBC") + 4]
+        if bankcode_char_afterhsbc == "O" or bankcode_char_afterhsbc == "o":
             fin_json["bankcode"] = fin_json["bankcode"][: fin_json["bankcode"].find("HSBC") + 4] + "0" + fin_json["bankcode"][fin_json["bankcode"].find("HSBC") + 5:]
             logging.debug("\tPost_Process_11 : Completed.")
 
     logging.debug("\t\nPost_Process_12 : If length of bankcode exceeds 4 and if the fourth charcater is 'O', replace it with '0'.")
     if len(fin_json["bankcode"]) > 4:
-        if fin_json["bankcode"][4] == "O":
+        if fin_json["bankcode"][4] == "O" or fin_json["bankcode"][4] == "o":
             fin_json["bankcode"] = fin_json["bankcode"][:4] + "0" + fin_json["bankcode"][5:]
             logging.debug("\tPost_Process_12 : Completed.")
 
@@ -982,7 +1242,7 @@ def ret_json(sample_line_list):
         if "HSBC02" in fin_json["bankcode"]:
             fin_json["bankcode"] = "HSBC02INDIA"
             logging.debug("\tPost_Process_17 : Completed.")
-    """
+
     logging.debug("\t\nPost_Process_18 : If length of ifsc code exceeds 4, check for possible wrongly read charcaters and replace them with precognitive words.")
     if len(fin_json["ifsc"]) > 4:
         if "C1T1" in fin_json["ifsc"]:
@@ -999,8 +1259,8 @@ def ret_json(sample_line_list):
             fin_json["ifsc"] = fin_json["ifsc"].replace("1C1C", "ICIC")
         if "1C1" in fin_json["ifsc"]:
             fin_json["ifsc"] = fin_json["ifsc"].replace("1C1", "ICI")
-    """
-    logging.debug("\t\nPost_Process_18 : If length of ifsc code exceeds 4, check for possible wrongly read charcaters and replace them with precognitive words from lookup.")
+
+    logging.debug("\t\nPost_Process_18.1 : If length of ifsc code exceeds 4, check for possible wrongly read charcaters and replace them with precognitive words from lookup.")
     if len(fin_json["ifsc"]) > 4:
         ifsc_first_four_char = fin_json["ifsc"][:4]
         for k,v in ifsc_mod_dict.items():
@@ -1180,6 +1440,21 @@ def ret_json(sample_line_list):
     if fin_json["utilitycode"] != "":
         if len(fin_json["utilitycode"]) != 18:
             fin_json["utilitycode"] = fin_json["utilitycode"][:4] + "0" * (18 - len(fin_json["utilitycode"])) + fin_json["utilitycode"][4:]
+
+    logging.debug("\t\nPost_Process_44 : Check if 'ore' is found in amountinwords, replace it by 'one'." )
+    if fin_json["amountinwords"] != "":
+        if "ore" in fin_json["amountinwords"].lower():
+            fin_json["amountinwords"] = fin_json["amountinwords"].replace("Ore", "One").replace("ore", "one")
+        if "orie" in fin_json["amountinwords"].lower():
+            fin_json["amountinwords"] = fin_json["amountinwords"].replace("Orie", "One").replace("orie", "one")
+
+    logging.debug("\t\nPost_Process_45 : reformat date, fromdate and todate in dd-mm-yyyy convention.")
+    if len(fin_json["date"]) >4:
+        fin_json["date"] = reformat_dates(fin_json["date"])
+    if len(fin_json["fromdate"]) > 4:
+        fin_json["fromdate"] = reformat_dates(fin_json["fromdate"])
+    if len(fin_json["todate"]) > 4:
+        fin_json["todate"] = reformat_dates(fin_json["todate"])
 
     logging.debug("\t\nPreparaing a new json for maintaining the correct order of keys.")
     new_js = {}
