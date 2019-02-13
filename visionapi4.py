@@ -1308,10 +1308,12 @@ def ret_json(sample_line_list):
     if len(fin_json["micr"]) > 2:
         fin_json["micr"] = fin_json["micr"].replace("G", "6")
     
-    logging.debug("\t\nPost_Process_25 : If 'rupees' similar word is found in amountinwords then remove the part upto that word.")
-    if len(fin_json["amountinwords"]) > 10 :
-        if "ees" in fin_json["amountinwords"].lower():
-            fin_json["amountinwords"] = fin_json["amountinwords"][fin_json["amountinwords"].lower().find("ees") + 3 :]
+    logging.debug("\t\nPost_Process_25 : Check if 'ore' is found in amountinwords, replace it by 'one'." )
+    if fin_json["amountinwords"] != "":
+        if "ore" in fin_json["amountinwords"].lower():
+            fin_json["amountinwords"] = fin_json["amountinwords"].replace("Ore", "One").replace("ore", "one")
+        if "orie" in fin_json["amountinwords"].lower():
+            fin_json["amountinwords"] = fin_json["amountinwords"].replace("Orie", "One").replace("orie", "one")
 
     logging.debug("\t\nPost_Process_26 : Remove all charcaters except the alphabetic ones from amountinwords.")
     fin_json["amountinwords"] = onlyalphabetic(fin_json["amountinwords"])
@@ -1438,20 +1440,34 @@ def ret_json(sample_line_list):
         if len(fin_json["utilitycode"]) != 18:
             fin_json["utilitycode"] = fin_json["utilitycode"][:4] + "0" * (18 - len(fin_json["utilitycode"])) + fin_json["utilitycode"][4:]
 
-    logging.debug("\t\nPost_Process_44 : Check if 'ore' is found in amountinwords, replace it by 'one'." )
-    if fin_json["amountinwords"] != "":
-        if "ore" in fin_json["amountinwords"].lower():
-            fin_json["amountinwords"] = fin_json["amountinwords"].replace("Ore", "One").replace("ore", "one")
-        if "orie" in fin_json["amountinwords"].lower():
-            fin_json["amountinwords"] = fin_json["amountinwords"].replace("Orie", "One").replace("orie", "one")
+    logging.debug("\t\nPost_Process_44 : If 'rupees' or similar word is found in amountinwords then remove the part upto that word.")
+    if len(fin_json["amountinwords"]) > 10 :
+        if "ees" in fin_json["amountinwords"].lower():
+            fin_json["amountinwords"] = fin_json["amountinwords"][fin_json["amountinwords"].lower().find("ees") + 3 :]
 
-    logging.debug("\t\nPost_Process_45 : reformat date, fromdate and todate in dd-mm-yyyy convention.")
+    logging.debug("\t\nPost_Process_45 : Reformat date, fromdate and todate in dd-mm-yyyy convention.")
     if len(fin_json["date"]) >4:
         fin_json["date"] = reformat_dates(fin_json["date"])
     if len(fin_json["fromdate"]) > 4:
         fin_json["fromdate"] = reformat_dates(fin_json["fromdate"])
     if len(fin_json["todate"]) > 4:
         fin_json["todate"] = reformat_dates(fin_json["todate"])
+
+    logging.debug("\t\nPost_Process_46 : If amountinwords is present in fin_json, check if corresponding amount is of appropriate length.")
+    if len(fin_json["amountinwords"]) > 4 and fin_json["amount"] != "":
+        temp_max_len_check = 0
+        if "crore" in fin_json["amountinwords"].lower():
+            temp_max_len_check = 10
+        elif "lakh" in fin_json["amountinwords"].lower():
+            temp_max_len_check = 7
+        elif "thousand" in fin_json["amountinwords"].lower():
+            temp_max_len_check = 5
+        elif "hundred" in fin_json["amountinwords"].lower():
+            temp_max_len_check = 3
+        amount_wo_tailzero = fin_json["amount"].split(".")[0]
+        amount_wo_tailzero = "".join([k for k in amount_wo_tailzero if k.isnumeric()])
+        if len(amount_wo_tailzero) > temp_max_len_check:
+            fin_json["amount"] = word2num(fin_json["amountinwords"])
 
     logging.debug("\t\nPreparaing a new json for maintaining the correct order of keys.")
     new_js = {}
