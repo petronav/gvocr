@@ -1456,6 +1456,7 @@ def ret_json(sample_line_list):
     logging.debug("\t\nPost_Process_46 : If amountinwords is present in fin_json, check if corresponding amount is of appropriate length.")
     if len(fin_json["amountinwords"]) > 4 and fin_json["amount"] != "":
         temp_max_len_check = 0
+        amount_has_comma_dot_zero_format = False
         if "crore" in fin_json["amountinwords"].lower():
             temp_max_len_check = 10
         elif "lakh" in fin_json["amountinwords"].lower():
@@ -1464,10 +1465,14 @@ def ret_json(sample_line_list):
             temp_max_len_check = 5
         elif "hundred" in fin_json["amountinwords"].lower():
             temp_max_len_check = 3
+        if "," in fin_json["amount"] and "." in fin_json["amount"]:
+            amount_has_comma_dot_zero_format = True
         amount_wo_tailzero = fin_json["amount"].split(".")[0]
         amount_wo_tailzero = "".join([k for k in amount_wo_tailzero if k.isnumeric()])
         if len(amount_wo_tailzero) > temp_max_len_check:
             fin_json["amount"] = word2num(fin_json["amountinwords"])
+        if amount_has_comma_dot_zero_format == False:
+            fin_json["amount"] = "".join([dig for dig in fin_json["amount"].split(".")[0] if dig.isnumeric()])
 
     logging.debug("\t\nPreparaing a new json for maintaining the correct order of keys.")
     new_js = {}
