@@ -59,7 +59,7 @@ def removespecialcharacter(string1):
     string2=re.sub('[^A-Za-z0-9\.\,\s]+', '', string1)
     return string2
 def onlyalphanumeric(string1):
-    """Return the string with only alphabetic and numeric type of charcaters."""
+    """Return the string with only alphabetic and numeric type of characters."""
     string2 = re.sub('[^A-Za-z0-9]+', '', string1)
     return string2
 def removespace(string1):
@@ -1175,7 +1175,7 @@ def ret_json(sample_line_list):
         fin_json["untilcancelled"] = "True"
         fin_json["debittype"] = "Maximum Amount"
         logging.debug("\tPost_Process_8 : Completed.")
-    logging.debug("\t\nPost_Process_9 : removing unwanted special charcaters from withbank; returning only alphanumeric string in utilitycode, ifsc, micr.")
+    logging.debug("\t\nPost_Process_9 : removing unwanted special characters from withbank; returning only alphanumeric string in utilitycode, ifsc, micr.")
     fin_json["withbank"] = removespecialcharacter(fin_json["withbank"])
     fin_json["utilitycode"] = onlyalphanumeric(fin_json["utilitycode"])
     fin_json["ifsc"] = onlyalphanumeric(fin_json["ifsc"])
@@ -1184,25 +1184,26 @@ def ret_json(sample_line_list):
     fin_json["debitaccounttype"] = removespecialcharacter(fin_json["debitaccounttype"])
     fin_json["debitaccounttype"] = onlyalphanumeric(fin_json["debitaccounttype"])
 
-    logging.debug("\t\nPost_Process_10 : If ifsc length exceeds 11, take last four charcaters and check if any alphabetic charcaters are attached.")
+    logging.debug("\t\nPost_Process_10 : If ifsc length exceeds 11, take last four characters and check if any alphabetic characters are attached.")
     if len(fin_json["ifsc"]) > 11:
         fin_json["ifsc"] = fin_json["ifsc"][:-4] + "".join([i for i in fin_json["ifsc"][-4:] if i.isnumeric()])
         logging.debug("\tPost_Process_10 : Completed.")
 
-    logging.debug("\t\nPost_Process_11 : If bankcode contains 'HSBC', check the immediate next charcater for 'O' and if present replace with '0'.")
+    logging.debug("\t\nPost_Process_11 : If bankcode contains 'HSBC', check the immediate next character for 'O' and if present replace with '0'.")
     if "HSBC" in fin_json["bankcode"]:
         bankcode_char_afterhsbc = fin_json["bankcode"][fin_json["bankcode"].find("HSBC") + 4]
         if bankcode_char_afterhsbc == "O" or bankcode_char_afterhsbc == "o":
             fin_json["bankcode"] = fin_json["bankcode"][: fin_json["bankcode"].find("HSBC") + 4] + "0" + fin_json["bankcode"][fin_json["bankcode"].find("HSBC") + 5:]
             logging.debug("\tPost_Process_11 : Completed.")
 
-    logging.debug("\t\nPost_Process_12 : If length of bankcode exceeds 4 and if the fourth charcater is 'O', replace it with '0'.")
+    logging.debug("\t\nPost_Process_12 : If length of bankcode exceeds 4 and if the fourth character is 'O', replace it with '0'.")
     if len(fin_json["bankcode"]) > 4:
         if fin_json["bankcode"][4] == "O" or fin_json["bankcode"][4] == "o":
             fin_json["bankcode"] = fin_json["bankcode"][:4] + "0" + fin_json["bankcode"][5:]
             logging.debug("\tPost_Process_12 : Completed.")
 
-    logging.debug("\t\nPost_Process_13 : If length of authorizebank exceeds 10, check if any charcater associated with to debit are associated, if found remove them.")
+    logging.debug("\t\nPost_Process_13 : If length of authorizebank exceeds 10, check if any characters except a-z, spaces and dots from issigned1. associated with to debit are associated, if found remove them.")
+
     if len(fin_json["authorizebank"]) > 10:
         if " to" in fin_json["authorizebank"].lower():
             fin_json["authorizebank"] = fin_json["authorizebank"][:fin_json["authorizebank"].lower().find(" to")]
@@ -1211,7 +1212,8 @@ def ret_json(sample_line_list):
         if "deb" in fin_json["authorizebank"].lower():
             fin_json["authorizebank"] = fin_json["authorizebank"][:fin_json["authorizebank"].lower().find("deb")]
 
-    logging.debug("\t\nPost_Process_14 : If micr contains only one charcater, regardless of being just once or duplicated; it's ought to be wrong. Reassign micr to vacant string.")
+    logging.debug("\t\nPost_Process_14 : If micr contains only one characters except a-z, spaces and dots from issigned1., regardless of being just once or duplicated; it's ought to be wrong. Reassign micr to vacant string.")
+
     if len(set(fin_json["micr"])) == 1:
         if "I" in set(fin_json["micr"]):
             fin_json["micr"] = ""
@@ -1226,7 +1228,8 @@ def ret_json(sample_line_list):
             fin_json["authorizebank"] = authorizebank_joint
             logging.debug("\tPost_Process_15 : Completed.")
 
-    logging.debug("\t\nPost_Process_16 : If length of ifsc concedes 5, check if fourth charcater is 'D' or 'Q' or 'O'; if so, replace them with '0'.")
+    logging.debug("\t\nPost_Process_16 : If length of ifsc concedes 5, check if fourth characters except a-z, spaces and dots from issigned1. is 'D' or 'Q' or 'O'; if so, replace them with '0'.")
+
     if len(fin_json["ifsc"]) > 5:
         ifsc_o_char = fin_json["ifsc"][4]
         logging.debug("\tPost_Process_16 : ifsc_o_char = {0}".format(ifsc_o_char))
@@ -1240,7 +1243,8 @@ def ret_json(sample_line_list):
             fin_json["bankcode"] = "HSBC02INDIA"
             logging.debug("\tPost_Process_17 : Completed.")
 
-    logging.debug("\t\nPost_Process_18 : If length of ifsc code exceeds 4, check for possible wrongly read charcaters and replace them with precognitive words.")
+    logging.debug("\t\nPost_Process_18 : If length of ifsc code exceeds 4, check for possible wrongly read characters except a-z, spaces and dots from issigned1.s and replace them with precognitive words.")
+
     if len(fin_json["ifsc"]) > 4:
         if "C1T1" in fin_json["ifsc"]:
             fin_json["ifsc"] = fin_json["ifsc"].replace("C1T1", "CITI")
@@ -1257,7 +1261,8 @@ def ret_json(sample_line_list):
         if "1C1" in fin_json["ifsc"]:
             fin_json["ifsc"] = fin_json["ifsc"].replace("1C1", "ICI")
 
-    logging.debug("\t\nPost_Process_18.1 : If length of ifsc code exceeds 4, check for possible wrongly read charcaters and replace them with precognitive words from lookup.")
+    logging.debug("\t\nPost_Process_18.1 : If length of ifsc code exceeds 4, check for possible wrongly read characters except a-z, spaces and dots from issigned1.s and replace them with precognitive words from lookup.")
+
     if len(fin_json["ifsc"]) > 4:
         ifsc_first_four_char = fin_json["ifsc"][:4]
         for k,v in ifsc_mod_dict.items():
@@ -1276,7 +1281,8 @@ def ret_json(sample_line_list):
         fin_json["utilitycode"] = fin_json["utilitycode"][:5] + fin_json["utilitycode"][5:].replace("O" , "0").replace("Q" , "0").replace("o", "0")
         logging.debug("\tPost_Process_20 : Completed.")
 
-    logging.debug("\t\nPost_Process_21 : If length of bankcode exceeds 4, check for possible wrongly read charcaters and replace them with precognitive words.")
+    logging.debug("\t\nPost_Process_21 : If length of bankcode exceeds 4, check for possible wrongly read characters except a-z, spaces and dots from issigned1.s and replace them with precognitive words.")
+
     if len(fin_json["bankcode"]) >4:
         if "1ND1A" in fin_json["bankcode"]:
             fin_json["bankcode"] = fin_json["bankcode"].replace("1ND1A", "INDIA")
@@ -1315,7 +1321,8 @@ def ret_json(sample_line_list):
         if "orie" in fin_json["amountinwords"].lower():
             fin_json["amountinwords"] = fin_json["amountinwords"].replace("Orie", "One").replace("orie", "one")
 
-    logging.debug("\t\nPost_Process_26 : Remove all charcaters except the alphabetic ones from amountinwords.")
+    logging.debug("\t\nPost_Process_26 : Remove all characters except a-z, spaces and dots from issigned1.s except the alphabetic ones from amountinwords.")
+
     fin_json["amountinwords"] = onlyalphabetic(fin_json["amountinwords"])
 
     logging.debug("\t\nPost_Process_26 : If amount is present in fin_json but amountinwords is vacant, call our special function to assign amountinwords.")
@@ -1328,7 +1335,8 @@ def ret_json(sample_line_list):
         fin_json["amount"] = str(word2num(fin_json["amountinwords"]))
         logging.debug("\tPost_Process_27 : Completed.")
 
-    logging.debug("\t\nPost_Process_28 : If debitaccounttype in fin_json has unwanted charcaters, remove them after finding our keywords.")
+    logging.debug("\t\nPost_Process_28 : If debitaccounttype in fin_json has unwanted characters except a-z, spaces and dots from issigned1.s, remove them after finding our keywords.")
+
     if len(fin_json["debitaccounttype"]) > 8:
         if "SB" in fin_json["debitaccounttype"].upper() and "NRE" not in fin_json["debitaccounttype"].upper() and "NRO" not in fin_json["debitaccounttype"].upper():
             fin_json["debitaccounttype"] = "SB"
@@ -1341,7 +1349,8 @@ def ret_json(sample_line_list):
         if "CC " in fin_json["debitaccounttype"].upper() or " CC" in fin_json["debitaccounttype"].upper():
             fin_json["debitaccounttype"] = "CC"
 
-    logging.debug("\t\nPost_Process_29 : If immediate charcater after 'NACH' in utilitycode is 'O', change it to '0'.")
+    logging.debug("\t\nPost_Process_29 : If immediate characters except a-z, spaces and dots from issigned1. after 'NACH' in utilitycode is 'O', change it to '0'.")
+
     if len(fin_json["utilitycode"]) > 4:
         if "NACH" in fin_json["utilitycode"].upper():
             if fin_json["utilitycode"][fin_json["utilitycode"].upper().find("NACH")+4] == "O":
@@ -1402,14 +1411,17 @@ def ret_json(sample_line_list):
             withbank_insert = find_withbank(sample_line_list)
             fin_json["withbank"] = withbank_insert
 
-    logging.debug("\t\nPost_Process_38 : If withbank contains special charcaters, remove them by applying function onlyalphabetic.")
+    logging.debug("\t\nPost_Process_38 : If withbank contains special characters except a-z, spaces and dots from issigned1.s, remove them by applying function onlyalphabetic.")
+
     fin_json["withbank"] = onlyalphabetic(fin_json["withbank"])
 
-    logging.debug("\t\nPost_Process_39 : If number of unique characters in micr is less than 3, it may contain arbitrary charcaters.")
+    logging.debug("\t\nPost_Process_39 : If number of unique characters in micr is less than 3, it may contain arbitrary characters except a-z, spaces and dots from issigned1.s.")
+
     if len(list(set(fin_json["micr"].lower()))) <= 3:
         fin_json["micr"] = ""
 
-    logging.debug("\t\nPost_Process_40 : If withbank is read, check if the alphabetic charcaters match with the cooresponding bank code.")
+    logging.debug("\t\nPost_Process_40 : If withbank is read, check if the alphabetic characters except a-z, spaces and dots from issigned1.s match with the cooresponding bank code.")
+
     if fin_json["withbank"] != "" and fin_json["ifsc"] != "":
         withbank_to_check_in_dict = " ".join(fin_json["withbank"].lower().split())
         ifsc_alphabetic_chars = "".join([m for m in fin_json["ifsc"] if not m.isnumeric()])
@@ -1435,7 +1447,8 @@ def ret_json(sample_line_list):
         fin_json["amountinwords"] = " ".join([k.capitalize() if k.lower() != 'and' else k for k in fin_json["amountinwords"].split()])
 
 
-    logging.debug("\t\nPost_Process_43 : Check if utilitycode is 18 charcaters length, if not add extra zeroes.")
+    logging.debug("\t\nPost_Process_43 : Check if utilitycode is 18 characters except a-z, spaces and dots from issigned1.s length, if not add extra zeroes.")
+
     if fin_json["utilitycode"] != "":
         if len(fin_json["utilitycode"]) != 18:
             fin_json["utilitycode"] = fin_json["utilitycode"][:4] + "0" * (18 - len(fin_json["utilitycode"])) + fin_json["utilitycode"][4:]
@@ -1473,6 +1486,10 @@ def ret_json(sample_line_list):
             fin_json["amount"] = word2num(fin_json["amountinwords"])
         if amount_has_comma_dot_zero_format == False:
             fin_json["amount"] = "".join([dig for dig in fin_json["amount"].split(".")[0] if dig.isnumeric()])
+
+    logging.debug("\t\nPost_Process_47 : Remove all characters except a-z, spaces and dots from issigned1.")
+    if fin_json["issigned1"] != "":
+        fin_json["issigned1"] = re.sub('[^A-Za-z\s\.]+', '', fin_json["issigned1"])
 
     logging.debug("\t\nPreparaing a new json for maintaining the correct order of keys.")
     new_js = {}
