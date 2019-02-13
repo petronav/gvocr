@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-__author__ = "Sayan Chaudhuri aka Michael Petronav"
-__credits__ = ["Sayan Chaudhuri aka Michael Petronav", "Gopi Agarwal (Advisor of Requirements)", "Sankar Chaudhuri (Tester)"]
+__author__ = "Michael Petronav"
 __version__ = "02.13.00"
-__email__ = ["sayan.bwn50@gmail.com", "petronav73939133@gmail.com" , "metronetizen@hotmail.com"]
+__email__ = "petronav73939133@gmail.com"
 __copyright__ = "Copyright 2019, Silfra GNSA OCR Project"
 __status__ = "Production"
 from google.cloud import vision
@@ -31,21 +30,19 @@ logging.basicConfig(filename = unique_log_file, level=logging.DEBUG, format="%(a
 # ROTATED IMAGE NAME + HOCR FILE NAME DECLARATION
 # =====================================================
 output_img_filename = ".".join(file_name.split(".")[:-1]) + ".rot." + file_name.split(".")[-1]
-print(output_img_filename)
 logging.debug("\toutput_img_filename : {0}".format(output_img_filename))
 #output_hocr_filename =  ".".join(output_img_filename.split(".")[:-1])
 output_hocr_filename = ".".join(file_name.split(".")[:-1])
-print(output_hocr_filename)
 logging.debug("\toutput_hocr_filename : {0}".format(output_hocr_filename))
 
 # =====================================================
 # RUN TESSERACT    |    CHECK ANGLE
 # =====================================================
 run_tesseract(file_name, output_hocr_filename, "eng")
-print("tesseract done.")
-logging.debug("\trunning tesseract is done.")
+print("Tesseract done.")
+logging.debug("\tRunning tesseract is done.")
 check_rot = rotate_image(cv_image = file_name, angle = parse_hocr(hocr_file = output_hocr_filename  + ".hocr"), file_name_rot = output_img_filename)
-
+logging.debug("\tcheck_rot : {0}".format(check_rot))
 # =====================================================
 # GOOGLE VISION CREDENTIALS DECLARATION
 # =====================================================
